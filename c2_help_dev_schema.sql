@@ -60,8 +60,10 @@ DROP TABLE IF EXISTS `tbl_C2_help_article_menu`;
 CREATE TABLE IF NOT EXISTS `tbl_C2_help_article_menu` (
   `C2_help_parent_article_id` varchar(200) NOT NULL DEFAULT '',
   `C2_help_child_article_id` varchar(200) NOT NULL DEFAULT '',
+  `C2_help_sub_child_article_id` varchar(200) DEFAULT NULL,
   `C2_help_parent_menu_order` int(10) NOT NULL,
   `C2_help_child_menu_order` int(10) NOT NULL DEFAULT '0',
+  `C2_help_sub_child_menu_order` int(200) DEFAULT '0',
   KEY `tbl_C2_activity_comment_fk_1` (`C2_help_parent_article_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -99,12 +101,6 @@ ALTER TABLE `tbl_C2_help_article_component` ADD FULLTEXT KEY `C2_help_article_co
 --
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `tbl_C2_help_article_component`
---
-ALTER TABLE `tbl_C2_help_article_component`
-  ADD CONSTRAINT `tbl_C2_help_article_component_fk_1` FOREIGN KEY (`C2_help_article_id`) REFERENCES `tbl_C2_help_article` (`C2_help_article_id`);
 
 --
 -- Constraints for table `tbl_C2_help_article_menu`

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:8889
--- Generation Time: Dec 17, 2021 at 02:04 PM
+-- Generation Time: Dec 26, 2021 at 03:20 AM
 -- Server version: 5.7.26
 -- PHP Version: 7.4.2
 
@@ -13,6 +13,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `rolli3oh_c2_help`
 --
+CREATE DATABASE IF NOT EXISTS `rolli3oh_c2_help` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `rolli3oh_c2_help`;
 
 DELIMITER $$
@@ -72,6 +73,28 @@ BEGIN
         C2_help_article_id = article_parent_id;
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_delete_sub_child_menu`$$
+CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_delete_sub_child_menu` (IN `article_sub_child_id` VARCHAR(200))  NO SQL
+BEGIN
+	DELETE
+	FROM
+		tbl_C2_help_article_menu 
+	WHERE 
+        C2_help_sub_child_article_id = article_sub_child_id;
+        
+	DELETE
+	FROM
+		tbl_C2_help_article 
+	WHERE 
+        C2_help_article_id = article_sub_child_id;
+	
+    DELETE
+	FROM
+		tbl_C2_help_article_component 
+	WHERE 
+        C2_help_article_id = article_sub_child_id;
+END$$
+
 DROP PROCEDURE IF EXISTS `sp_get_article_details`$$
 CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_get_article_details` (IN `article_id` VARCHAR(200))  NO SQL
 BEGIN
@@ -104,6 +127,8 @@ BEGIN
 	ON
 		tbl_C2_help_article_component.C2_help_article_id = tbl_C2_help_article.C2_help_article_id
 	WHERE
+		tbl_C2_help_article_component.C2_help_article_component_type  != 'para-image'
+	AND
 		MATCH (tbl_C2_help_article_component.C2_help_article_component_content)
 		AGAINST (search_key IN BOOLEAN MODE);
 END$$
@@ -157,6 +182,27 @@ BEGIN
 		tbl_C2_help_settings;
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_get_sub_child_menu`$$
+CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_get_sub_child_menu` (IN `article_child_id` VARCHAR(200))  NO SQL
+BEGIN
+	SELECT
+		DISTINCT tbl_C2_help_article_menu.C2_help_sub_child_article_id AS articleId,
+        tbl_C2_help_article_menu.C2_help_sub_child_menu_order AS subChildMenuOrder,
+        tbl_C2_help_article.C2_help_article_title AS articleTitle
+	FROM
+		tbl_C2_help_article_menu
+	LEFT JOIN
+		tbl_C2_help_article
+	ON
+		tbl_C2_help_article_menu.C2_help_sub_child_article_id = tbl_C2_help_article.C2_help_article_id
+	WHERE
+		tbl_C2_help_article_menu.C2_help_child_article_id = article_child_id
+	AND
+		tbl_C2_help_article_menu.C2_help_sub_child_article_id != ''
+	ORDER BY
+		tbl_C2_help_article_menu.C2_help_sub_child_menu_order ASC;
+END$$
+
 DROP PROCEDURE IF EXISTS `sp_insert_article`$$
 CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_insert_article` (IN `article_id` VARCHAR(200), IN `article_title` VARCHAR(1000))  NO SQL
 BEGIN
@@ -198,22 +244,26 @@ BEGIN
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_insert_menu`$$
-CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_insert_menu` (IN `article_parent_id` VARCHAR(200), IN `article_child_id` VARCHAR(200), IN `parent_menu_order` INT(10), IN `child_menu_order` INT(10))  NO SQL
+CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_insert_menu` (IN `article_parent_id` VARCHAR(200), IN `article_child_id` VARCHAR(200), IN `article_sub_child_id` VARCHAR(200), IN `parent_menu_order` INT(10), IN `child_menu_order` INT(10), IN `sub_child_menu_order` INT(10))  NO SQL
 BEGIN
 	INSERT INTO 
     tbl_C2_help_article_menu 
         (
 			C2_help_parent_article_id, 
             C2_help_child_article_id,
+            C2_help_sub_child_article_id,
             C2_help_parent_menu_order,
-            C2_help_child_menu_order
+            C2_help_child_menu_order,
+            C2_help_sub_child_menu_order
         ) 
     values 
         (
             article_parent_id, 
             article_child_id,
+            article_sub_child_id,
             parent_menu_order,
-            child_menu_order
+            child_menu_order,
+            sub_child_menu_order
         );
 END$$
 
@@ -316,6 +366,23 @@ BEGIN
         C2_help_parent_menu_order = parent_menu_order
 	WHERE 
         C2_help_parent_article_id = article_parent_id;
+END$$
+
+DROP PROCEDURE IF EXISTS `sp_update_sub_child_menu`$$
+CREATE DEFINER=`rolli3oh`@`localhost` PROCEDURE `sp_update_sub_child_menu` (IN `article_parent_id` VARCHAR(200), IN `article_child_id` VARCHAR(200), IN `article_sub_child_id` VARCHAR(200), IN `parent_menu_order` INT(10), IN `child_menu_order` INT(10), IN `sub_child_menu_order` INT(10))  NO SQL
+BEGIN
+	UPDATE
+		tbl_C2_help_article_menu 
+	SET 
+        C2_help_parent_menu_order = parent_menu_order,
+        C2_help_child_menu_order = child_menu_order,
+        C2_help_sub_child_menu_order = sub_child_menu_order
+	WHERE 
+        C2_help_parent_article_id = article_parent_id
+	AND
+		C2_help_child_article_id = article_child_id
+	AND
+		C2_help_sub_child_article_id = article_sub_child_id;
 END$$
 
 DELIMITER ;
